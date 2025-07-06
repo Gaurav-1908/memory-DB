@@ -1,4 +1,6 @@
 {
-  "port": 5001,
-  "allowed_ips": ["127.0.0.1", "192.168.1.100"]
+  "port": 5000,
+  "allowed_ips": ["127.0.0.1", "192.168.1.100"],
+  "security": "OFF",
+  "password":"PASSWORD"
 }

@@ -1,54 +1,29 @@
 from flask import Flask, request, jsonify
-from threading import Lock
-import json
+import json,os
+from src.Store import Store
 
 with open('config.json') as f:
     config = json.load(f)
 
 ALLOWED_IPS = config.get("allowed_ips", ['localhost'])
 PORT = config.get("port", 5000)
+SECURITY = config.get("security","OFF")
+PASSWORD = config.get("password","")
 
 app = Flask(__name__)
-
-class GDB:
-    def __init__(self):
-        self.store = {}
-        self.lock = Lock()
-
-    def put(self, data):
-        with self.lock:
-            self.store.update(data)
-
-    def get(self, key):
-        with self.lock:
-            return self.store.get(key)
-
-    def delete(self, key):
-        with self.lock:
-            if key in self.store:
-                del self.store[key]
-                return True
-            return False
-
-    def reset(self):
-        with self.lock:
-            self.store.clear()
-
-    def exists(self, key):
-        with self.lock:
-            return key in self.store
-
-    def get_all(self):
-        with self.lock:
-            return dict(self.store)
-
-store = GDB()
+store = Store()
 
 @app.before_request
 def limit_remote_addr():
     client_ip = request.remote_addr
+    password = request.headers.get("X-Password")
+    print(password)
     if client_ip not in ALLOWED_IPS:
         return jsonify({"error": "Forbidden", "message": f"Access denied for IP {client_ip}"}), 403
+    if ( SECURITY == "ON" and password != PASSWORD):
+        return jsonify({"error": "Forbidden", "message": f"Access denied due to wrong passowrd"}), 403
+
+
 
 @app.route('/put', methods=['PUT'])
 def put():
@@ -86,6 +61,28 @@ def exists(key):
 @app.route('/all', methods=['GET'])
 def get_all():
     return jsonify(store.get_all()), 200
+
+
+@app.route('/backup')
+def backup():
+    data = store.get_all()  # Get all key-value pairs
+    backup_path = os.path.join(os.path.dirname(__file__), 'backup.json')
+
+    try:
+        with open(backup_path, 'w') as f:
+            json.dump(data, f, indent=2)
+        return jsonify({
+            "message": "Backup created successfully.",
+            "data": data
+        }), 200
+    except Exception as e:
+        return jsonify({
+            "error": "Backup failed",
+            "details": str(e)
+        }), 500
+
+
+
 
 if __name__ == '__main__':
     app.run(debug=True,port=PORT)
