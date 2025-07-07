@@ -81,8 +81,5 @@ def backup():
             "details": str(e)
         }), 500
 
-
-
-
 if __name__ == '__main__':
     app.run(debug=True,port=PORT)
