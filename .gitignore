@@ -1,2 +1,7 @@
 /server/venv
 /client/venv
+/server/backup.json
+/client/__pycache__
+/client/src/__pycache__
+/server/config.json
+/client/config.json
